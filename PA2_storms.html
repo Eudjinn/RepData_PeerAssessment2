@@ -8,6 +8,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 
+<meta name="author" content="Evgeniy Zabrodskiy" />
 
 
 <title>The impact of storms and severe weather events on economy and population health in USA</title>
@@ -61,12 +62,14 @@ img {
 
 <div id="header">
 <h1 class="title">The impact of storms and severe weather events on economy and population health in USA</h1>
+<h4 class="author"><em>Evgeniy Zabrodskiy</em></h4>
 </div>
 
 
 <div id="synopsis" class="section level2">
 <h2>Synopsis</h2>
-<p>This analyisis is based on the data from the NOAA Storm Database Event about severe weather events in the United states. The goal of the analysis is to find the most harmful weather events with respect to population health and to understand which weather events have the most negative impact on the economy.<br />There are two main sections in the document:<br /><strong>- Data Processing</strong> guides through transformations of the RAW data that are needed to perform the analysis;<br /><strong>- Results</strong> summarizes the analysis with plots and conclusions.</p>
+<p>The goal of the analysis is to find the most harmful weather events with respect to population health and to understand which weather events have the most negative impact on the economy. This analyisis is based on the data from the NOAA Storm Database Event about severe weather events in the United States.</p>
+<p>There are two main sections in the document:<br /><strong>- Data Processing</strong> guides through transformations of the RAW data that are needed to perform the analysis;<br /><strong>- Results</strong> summarizes the analysis with plots and conclusions.</p>
 </div>
 <div id="data-processing" class="section level2">
 <h2>Data Processing</h2>
@@ -79,13 +82,13 @@ storms &lt;- read.csv(&quot;repdata-data-StormData.csv.bz2&quot;)</code></pre>
 <div id="cleaning-data" class="section level3">
 <h3>Cleaning data</h3>
 <p>Quick look at the data shows that it needs tidying. Also it is clear that not all the columns are needed from this dataset to answer the questions of this analysis, sosome transformations will be performed and described below.</p>
-<p>First of all, only part of the dataset should be used for this analysis for several reasons:<br />- According to <a href="Storm%20Events%20Database%20description"><a href="http://www.ncdc.noaa.gov/stormevents/details.jsp" class="uri">http://www.ncdc.noaa.gov/stormevents/details.jsp</a></a> there are three distinct periods when data reporting changed significantly.<br />For the analysis only third period will be selected which started in January 1996 and contains data for 48 event types recorded as defined in NWS Directive 10-1605. If we decided to use the complete dataset, results of the analysis may be significantly biased due to major differences in number and types of events reported during mentioned periods.<br />- We need only events which led to <strong>fatalities</strong> or <strong>injuries</strong> to answer first question.<br />- We need only events which caused <strong>property damage</strong> or <strong>crop damage</strong>.</p>
-<p>In order to get the subset of the data, based on date, BGN_DATE should be converted to Date format and then events which began later than January, 1996 can be selected.</p>
+<p>First of all, only part of the dataset should be used for this analysis for several reasons:<br />- According to <a href="http://www.ncdc.noaa.gov/stormevents/details.jsp">Storm Events Database description</a> there are three distinct periods when data reporting changed significantly.<br />For the analysis only third period will be selected which started in January 1996 and contains data for 48 event types recorded as defined in NWS Directive 10-1605. If we decided to use the complete dataset, results of the analysis may be significantly biased due to major differences in the number and types of events reported during mentioned periods.<br />- We need only events which led to <strong>fatalities</strong> or <strong>injuries</strong> to answer first question.<br />- We need only events which caused <strong>property damage</strong> or <strong>crop damage</strong>.</p>
+<p>In order to get the subset of the data, based on date, BGN_DATE should be converted to Date format. Then events which began later than January, 1996 can be selected.</p>
 <pre class="r"><code>storms &lt;- transform(storms, BGN_DATE = as.Date(as.character(BGN_DATE), &quot;%m/%d/%Y&quot;))
 storms1996 &lt;- subset(storms, BGN_DATE &gt;= as.Date(&quot;1996-01-01&quot;))</code></pre>
 <p>Select events with either fatalities or injuries or property damage or crop damage.</p>
 <pre class="r"><code>selected &lt;- subset(storms1996, FATALITIES &gt; 0 | INJURIES &gt; 0 | PROPDMG &gt; 0 | CROPDMG &gt; 0)</code></pre>
-<p>Ther is a known duplicate with REFNUM == 605943 in the dataset with errorneous damage value modifier (“B” in PROPDMGEXP) which should be removed. It duplicates REFNUM == 567251 which has correct damage value modifier (“M” in PROPDMGEXP):</p>
+<p>There is a known duplicate with REFNUM == 605943 in the dataset with errorneous damage value modifier (“B” in PROPDMGEXP) which should be removed. It duplicates REFNUM == 567251 which has correct damage value modifier (“M” in PROPDMGEXP):</p>
 <pre class="r"><code>selected[selected$REFNUM == 605943, c(&quot;BGN_DATE&quot;,
                                       &quot;COUNTYNAME&quot;, 
                                       &quot;STATE&quot;, 
@@ -117,9 +120,9 @@ storms1996 &lt;- subset(storms, BGN_DATE &gt;= as.Date(&quot;1996-01-01&quot;))<
 ## 567251          M
 ##                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          REMARKS
 ## 567251 Severe Flooding occurred as the Napa River exceeded flood stage at both St.Helena and in the City of Napa. The Napa Creek in downtown Napa also flooded, damaging the entire business district. City and Parks Department in Napa was hit with $6 million in damage alone. The City of Napa had 600 homes with moderate damage, 150 damaged businesses with costs of at least $70 million. More than 5 inches of rain fell on Napa in less than 24 hours. The flooding continued into the first few days of January 2006.</code></pre>
-<p>Remove the duplicate with mistake:</p>
+<p>Remove the duplicate which contains the mistake:</p>
 <pre class="r"><code>selected &lt;- selected[!selected$REFNUM == 605943, ]</code></pre>
-<p>It is necessary to calculate damage value using the same base. In order to do this we need to multiply PROPDMG and CROPDMG based on PROPDMGEXP and CROPDMGEXP modifiers. Look at damage values modifiers:</p>
+<p>It is necessary to calculate damage value using the same base. In order to do this we need to multiply PROPDMG and CROPDMG based on PROPDMGEXP and CROPDMGEXP modifiers.<br />Take a look at damage values modifiers:</p>
 <pre class="r"><code>table(selected$PROPDMGEXP)</code></pre>
 <pre><code>## 
 ##             +      -      0      1      2      3      4      5      6 
@@ -145,12 +148,12 @@ selected$CROPDMG[selected$CROPDMGEXP == &quot;M&quot;] &lt;-
     selected$CROPDMG[selected$CROPDMGEXP == &quot;M&quot;] * 1000000
 selected$CROPDMG[selected$CROPDMGEXP == &quot;B&quot;] &lt;- 
     selected$CROPDMG[selected$CROPDMGEXP == &quot;B&quot;] * 1000000000</code></pre>
-<p>Next step is to clean levels of EVTYPE. Using subsetting we reduced the number of distinct EVTYPES and we need to adjust levels.</p>
+<p>Next step is to remove unused levels of EVTYPE. Using subsetting we reduced the number of distinct EVTYPES and we need to adjust levels.</p>
 <pre class="r"><code># adjust levels and make them uppercase
 selected$EVTYPE &lt;- factor(toupper(as.character(selected$EVTYPE)))</code></pre>
-<p>Even after subsetting we can see a huge number of weather events compared to expected 48 events listed in <a href="NWS%20Directive%2010-1605"><a href="http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf" class="uri">http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf</a></a><br />This means that EVTYPE values need to be corrected.</p>
+<p>Even after subsetting and removing unused event types, there is a huge number of weather events compared to expected 48 events listed in <a href="http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf">NWS Directive 10-1605</a><br />This means that EVTYPE values need to be corrected.</p>
 <p>Many event names in the dataset have the following defects:<br />- short versions of the official event names<br />- names with addidional suffixes<br />- names with spaces in inappropriate places<br />- combined events<br />- names made up with no reference to official event names</p>
-<p>Events from the official document NWS Directive 10-1605:</p>
+<p>Events from the official document <em>NWS Directive 10-1605</em>:</p>
 <pre class="r"><code>events &lt;- c(&quot;Astronomical Low Tide&quot;, &quot;Avalanche&quot;, &quot;Blizzard&quot;, &quot;Coastal Flood&quot;, &quot;Cold/Wind Chill&quot;, &quot;Debris Flow&quot;, &quot;Dense Fog&quot;, &quot;Dense Smoke&quot;, &quot;Drought&quot;, &quot;Dust Devil&quot;, &quot;Dust Storm&quot;, &quot;Excessive Heat&quot;, &quot;Extreme Cold/Wind Chill&quot;, &quot;Flash Flood&quot;, &quot;Flood&quot;, &quot;Frost/Freeze&quot;, &quot;Funnel Cloud&quot;, &quot;Freezing Fog&quot;, &quot;Hail&quot;, &quot;Heat&quot;, &quot;Heavy Rain&quot;, &quot;Heavy Snow&quot;, &quot;High Surf&quot;, &quot;High Wind&quot;, &quot;Hurricane (Typhoon)&quot;, &quot;Ice Storm&quot;, &quot;Lake-Effect Snow&quot;, &quot;Lakeshore Flood&quot;, &quot;Lightning&quot;, &quot;Marine Hail&quot;, &quot;Marine High Wind&quot;, &quot;Marine Strong Wind&quot;, &quot;Marine Thunderstorm Wind&quot;, &quot;Rip Current&quot;, &quot;Seiche&quot;, &quot;Sleet&quot;, &quot;Storm Surge/Tide&quot;, &quot;Strong Wind&quot;, &quot;Thunderstorm Wind&quot;, &quot;Tornado&quot;, &quot;Tropical Depression&quot;, &quot;Tropical Storm&quot;, &quot;Tsunami&quot;, &quot;Volcanic Ash&quot;, &quot;Waterspout&quot;, &quot;Wildfire&quot;, &quot;Winter Storm&quot;, &quot;Winter Weather&quot;)
 
 # make upper-case version of event names
@@ -223,7 +226,7 @@ economyharm.df.top10$event &lt;- factor(economyharm.df.top10$event, levels = eco
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>
-<p>The result of the analysis shows the most harmful weather events in United States from January 1996 to November 2011 in two aspects:<br />1. Which types of events are most harmful with respect to population health?<br />2. Which types of events have the greatest economic consequences?</p>
+<p>The result of the analysis shows the most harmful weather events in United States from January 1996 to November 2011 answering two questions:<br />1. Which types of events are most harmful with respect to population health?<br />2. Which types of events have the greatest economic consequences?</p>
 <p>The barplot below shows ten most harmful weather events (x-axis) with the corresponding number of deaths (y-axis).</p>
 <pre class="r"><code>fatalities.low = min(fatalities.df.top10$casualties) 
 fatalities.high = max(fatalities.df.top10$casualties)

@@ -1,9 +1,11 @@
 # The impact of storms and severe weather events on economy and population health in USA
+Evgeniy Zabrodskiy  
 
 
 
 ## Synopsis
-This analyisis is based on the data from the NOAA Storm Database Event about severe weather events in the United states. The goal of the analysis is to find the most harmful weather events with respect to population health and to understand which weather events have the most negative impact on the economy.  
+The goal of the analysis is to find the most harmful weather events with respect to population health and to understand which weather events have the most negative impact on the economy. This analyisis is based on the data from the NOAA Storm Database Event about severe weather events in the United States.  
+
 There are two main sections in the document:  
 **- Data Processing** guides through transformations of the RAW data that are needed to perform the analysis;  
 **- Results** summarizes the analysis with plots and conclusions.
@@ -24,12 +26,12 @@ storms <- read.csv("repdata-data-StormData.csv.bz2")
 Quick look at the data shows that it needs tidying. Also it is clear that not all the columns are needed from this dataset to answer the questions of this analysis, sosome transformations will be performed and  described below.
 
 First of all, only part of the dataset should be used for this analysis for several reasons:  
-- According to [http://www.ncdc.noaa.gov/stormevents/details.jsp](Storm Events Database description) there are three distinct periods when data reporting changed significantly.  
-For the analysis only third period will be selected which started in January 1996 and contains data for 48 event types recorded as defined in NWS Directive 10-1605. If we decided to use the complete dataset, results of the analysis may be significantly biased due to major differences in number and types of events reported during mentioned periods.  
+- According to [Storm Events Database description](http://www.ncdc.noaa.gov/stormevents/details.jsp) there are three distinct periods when data reporting changed significantly.  
+For the analysis only third period will be selected which started in January 1996 and contains data for 48 event types recorded as defined in NWS Directive 10-1605. If we decided to use the complete dataset, results of the analysis may be significantly biased due to major differences in the number and types of events reported during mentioned periods.  
 - We need only events which led to **fatalities** or **injuries** to answer first question.  
 - We need only events which caused **property damage** or **crop damage**.  
 
-In order to get the subset of the data, based on date, BGN_DATE should be converted to Date format and then events which began later than January, 1996 can be selected.
+In order to get the subset of the data, based on date, BGN_DATE should be converted to Date format. Then events which began later than January, 1996 can be selected.
 
 
 ```r
@@ -43,7 +45,7 @@ Select events with either fatalities or injuries or property damage or crop dama
 selected <- subset(storms1996, FATALITIES > 0 | INJURIES > 0 | PROPDMG > 0 | CROPDMG > 0)
 ```
 
-Ther is a known duplicate with REFNUM == 605943 in the dataset with errorneous damage value modifier ("B" in PROPDMGEXP) which should be removed. It duplicates REFNUM == 567251 which has correct damage value modifier ("M" in PROPDMGEXP):
+There is a known duplicate with REFNUM == 605943 in the dataset with errorneous damage value modifier ("B" in PROPDMGEXP) which should be removed. It duplicates REFNUM == 567251 which has correct damage value modifier ("M" in PROPDMGEXP):
 
 ```r
 selected[selected$REFNUM == 605943, c("BGN_DATE",
@@ -89,14 +91,14 @@ selected[selected$REFNUM == 567221, c("BGN_DATE",
 ## 567251 Severe Flooding occurred as the Napa River exceeded flood stage at both St.Helena and in the City of Napa. The Napa Creek in downtown Napa also flooded, damaging the entire business district. City and Parks Department in Napa was hit with $6 million in damage alone. The City of Napa had 600 homes with moderate damage, 150 damaged businesses with costs of at least $70 million. More than 5 inches of rain fell on Napa in less than 24 hours. The flooding continued into the first few days of January 2006.
 ```
 
-Remove the duplicate with mistake:
+Remove the duplicate which contains the mistake:
 
 ```r
 selected <- selected[!selected$REFNUM == 605943, ]
 ```
 
-It is necessary to calculate damage value using the same base. In order to do this we need to multiply PROPDMG and CROPDMG based on PROPDMGEXP and CROPDMGEXP modifiers.
-Look at damage values modifiers:
+It is necessary to calculate damage value using the same base. In order to do this we need to multiply PROPDMG and CROPDMG based on PROPDMGEXP and CROPDMGEXP modifiers.  
+Take a look at damage values modifiers:
 
 ```r
 table(selected$PROPDMGEXP)
@@ -140,14 +142,14 @@ selected$CROPDMG[selected$CROPDMGEXP == "B"] <-
     selected$CROPDMG[selected$CROPDMGEXP == "B"] * 1000000000
 ```
 
-Next step is to clean levels of EVTYPE. Using subsetting we reduced the number of distinct EVTYPES and we need to adjust levels.  
+Next step is to remove unused levels of EVTYPE. Using subsetting we reduced the number of distinct EVTYPES and we need to adjust levels.  
 
 ```r
 # adjust levels and make them uppercase
 selected$EVTYPE <- factor(toupper(as.character(selected$EVTYPE)))
 ```
 
-Even after subsetting we can see a huge number of weather events compared to expected 48 events listed in [http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf](NWS Directive 10-1605)  
+Even after subsetting and removing unused event types, there is a huge number of weather events compared to expected 48 events listed in [NWS Directive 10-1605](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf)  
 This means that EVTYPE values need to be corrected.  
 
 Many event names in the dataset have the following defects:  
@@ -157,7 +159,7 @@ Many event names in the dataset have the following defects:
 - combined events  
 - names made up with no reference to official event names  
 
-Events from the official document NWS Directive 10-1605:   
+Events from the official document *NWS Directive 10-1605*:   
 
 ```r
 events <- c("Astronomical Low Tide", "Avalanche", "Blizzard", "Coastal Flood", "Cold/Wind Chill", "Debris Flow", "Dense Fog", "Dense Smoke", "Drought", "Dust Devil", "Dust Storm", "Excessive Heat", "Extreme Cold/Wind Chill", "Flash Flood", "Flood", "Frost/Freeze", "Funnel Cloud", "Freezing Fog", "Hail", "Heat", "Heavy Rain", "Heavy Snow", "High Surf", "High Wind", "Hurricane (Typhoon)", "Ice Storm", "Lake-Effect Snow", "Lakeshore Flood", "Lightning", "Marine Hail", "Marine High Wind", "Marine Strong Wind", "Marine Thunderstorm Wind", "Rip Current", "Seiche", "Sleet", "Storm Surge/Tide", "Strong Wind", "Thunderstorm Wind", "Tornado", "Tropical Depression", "Tropical Storm", "Tsunami", "Volcanic Ash", "Waterspout", "Wildfire", "Winter Storm", "Winter Weather")
@@ -165,6 +167,7 @@ events <- c("Astronomical Low Tide", "Avalanche", "Blizzard", "Coastal Flood", "
 # make upper-case version of event names
 eventsUC <- toupper(events)
 ```
+
 This data is not used in the analysis directly but it was needed at the exploratory phase, so it is kept in the document for reference.
 
 Many weather events have very little impact on the results of the analysis as it was discovered at the exploratory data analysis phase and those event names are kept as is.   
@@ -244,11 +247,11 @@ economyharm.df.top10$event <- factor(economyharm.df.top10$event, levels = econom
 ```
 
 ## Results
-The result of the analysis shows the most harmful weather events in United States from January 1996 to November 2011 in two aspects:  
+The result of the analysis shows the most harmful weather events in United States from January 1996 to November 2011 answering two questions:  
 1. Which types of events are most harmful with respect to population health?  
 2. Which types of events have the greatest economic consequences?
 
-The barplot below shows ten most harmful weather events (x-axis) with the corresponding number of deaths (y-axis). 
+The barplot below shows ten most harmful weather events (x-axis) with the corresponding number of deaths (y-axis).  
 
 ```r
 fatalities.low = min(fatalities.df.top10$casualties) 
@@ -269,7 +272,7 @@ qplot(event,
 
 ![](PA2_storms_files/figure-html/results_fatalities-1.png) 
 
-The barplot below shows ten most harmful weather events (x-axis) with the corresponding number of injuries (y-axis). 
+The barplot below shows ten most harmful weather events (x-axis) with the corresponding number of injuries (y-axis).  
 
 ```r
 injuries.low = min(injuries.df.top10$casualties) 
@@ -290,7 +293,7 @@ qplot(event,
 
 ![](PA2_storms_files/figure-html/results_injuries-1.png) 
 
-The barplot below shows which types of events (x-axis) have the greatest economic consequences. Damage is  estimated in billions of dollars (y-axis).
+The barplot below shows which types of events (x-axis) have the greatest economic consequences. Damage is estimated in billions of dollars (y-axis).
 
 ```r
 qplot(event, 
